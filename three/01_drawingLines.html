@@ -1,0 +1,299 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3维图表</title>
+    <style>
+        body{
+            margin:0;
+            padding:0;
+        }
+    </style>
+</head>
+
+<body onload="draw();">
+
+
+<script src="https://cdn.bootcss.com/three.js/91/three.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="js/controls/OrbitControls.js"></script>
+<script src="js/libs/stats.min.js"></script>
+<script src="https://cdn.bootcss.com/dat-gui/0.7.1/dat.gui.min.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/towChart.js"></script>
+
+<script>
+
+    var renderer, camera, scene, gui, light, stats, controls
+    var cameraOrtho, sceneOrtho /*正交相机 以及场景 用于在three中制作ui交互*/
+    var line,box,icon
+
+    function initRender() {
+        renderer = new THREE.WebGLRenderer({antialias: true})
+        renderer.setPixelRatio(window.devicePixelRatio)
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        renderer.setClearColor(0xeeeeee)
+        renderer.shadowMap.enabled = true
+        renderer.autoClear = false
+
+        document.body.appendChild(renderer.domElement)
+    }
+
+    function boxInaBox(){
+        var boxMaterial = new THREE.MeshLambertMaterial({color:'rgb(255,200,255)',transparent:true,opacity: 0.3})
+        var boxgeometry1 = new THREE.BoxGeometry( 0.1, 10, 10 )//左右的
+        var boxgeometry2 = new THREE.BoxGeometry( 10,0.1,10)//上下的
+        var boxgeometry3 = new THREE.BoxGeometry( 10,10,0.1)//前后的
+        var box1 = new THREE.Mesh(boxgeometry1,boxMaterial)
+        var box2 = new THREE.Mesh(boxgeometry1,boxMaterial)
+        var box3 = new THREE.Mesh(boxgeometry2,boxMaterial)
+        var box4 = new THREE.Mesh(boxgeometry2,boxMaterial)
+        var box5 = new THREE.Mesh(boxgeometry3,boxMaterial)
+        var box6 = new THREE.Mesh(boxgeometry3,boxMaterial)
+        box1.position.set(50,30,50)
+        box2.position.set(60,30,50)
+        box3.position.set(55,25,50)
+        box4.position.set(55,35,50)
+        box5.position.set(55,30,45)
+        box6.position.set(55,30,55)
+        scene.add( box1 )
+        scene.add( box2 )
+        scene.add( box3 )
+        scene.add( box4 )
+        scene.add( box5 )
+        scene.add( box6 )
+
+        boxMaterial = new THREE.MeshLambertMaterial({color:'rgb(255,255,200)',transparent:true,opacity: 1})
+        var boxgeometry2 = new THREE.BoxGeometry( 2, 2, 2 )
+        var innerBox = new THREE.Mesh(boxgeometry2,boxMaterial)
+        innerBox.position.set(55,30,50)
+        scene.add( innerBox )
+    }
+
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+        //camera = new THREE.OrthographicCamera(-20, 20, 20, -20, 1, 1000 );
+        camera.position.set(20,32,55)
+        camera.lookAt(0,0,0)
+
+        cameraOrtho = new THREE.OrthographicCamera( 0, window.innerWidth, window.innerHeight, 0, 1, 200 )
+        cameraOrtho.position.z = 16
+    }
+
+    function initScene() {
+        var cubeTextureLoader = new THREE.CubeTextureLoader()
+        cubeTextureLoader.setPath('textures/cube/MilkyWay/')
+        var cubeTexture = cubeTextureLoader.load([
+            'dark-s_px.jpg', 'dark-s_nx.jpg',
+            'dark-s_py.jpg', 'dark-s_ny.jpg',
+            'dark-s_pz.jpg', 'dark-s_nz.jpg'
+        ])
+
+        scene = new THREE.Scene()
+
+        scene.background = cubeTexture
+
+        sceneOrtho = new THREE.Scene()
+    }
+
+    function initGui() {
+        gui = {}
+        var datGui = new dat.GUI()
+    }
+
+    function initLight() {
+        scene.add(new THREE.AmbientLight(0x444444))
+
+        light = new THREE.DirectionalLight(0xffffff)
+        light.position.set(-10, 20, 20)
+
+        light.castShadow = true
+        light.shadow.camera.top = 10
+        light.shadow.camera.bottom = -10
+        light.shadow.camera.left = -10
+        light.shadow.camera.right = 10
+
+        light.castShadow = true
+
+        scene.add(light)
+    }
+
+    function initModel() {
+        var helper = new THREE.AxesHelper(50)
+        scene.add(helper)
+
+        var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+        var materialRed = new THREE.LineBasicMaterial({color:0xff4444});
+        var materialWhite9 = new THREE.LineBasicMaterial({color:0xffffff ,opacity: 0.9,transparent:true});
+        var materialWhite = new THREE.LineBasicMaterial({color:0xffffff ,opacity: 0.6,transparent:true});
+        var geometry = new THREE.Geometry()
+
+        geometry.vertices.push(new THREE.Vector3(-10,0,0))
+        geometry.vertices.push(new THREE.Vector3(0,10,0))
+        geometry.vertices.push(new THREE.Vector3(10,0,0))
+
+
+
+        //var line = new THREE.Line(geometry,materialWhite)
+        //scene.add(line)
+
+
+        towChart.line.drawGrid(5,6,materialWhite,'y',scene)
+        towChart.line.drawGrid(5,6,materialWhite,'z',scene)
+        towChart.line.drawGrid(5,6,materialWhite,'x',scene)
+
+        towChart.line.oneCurve({x:4,y:4,z:4},{x:8,y:15,z:4},materialWhite9);
+        towChart.line.oneCurve({x:8,y:15,z:4},{x:12,y:20,z:4},materialWhite9);
+        towChart.line.oneCurve({x:12,y:20,z:4},{x:16,y:5,z:4},materialWhite9);
+
+        towChart.line.oneCurve({x:4,y:3,z:8},{x:8,y:12,z:8},materialRed);
+        towChart.line.oneCurve({x:8,y:12,z:8},{x:12,y:10,z:8},materialRed);
+        towChart.line.oneCurve({x:12,y:10,z:8},{x:16,y:18,z:8},materialRed);
+
+        var cubeMaterial = new THREE.MeshLambertMaterial({color:0x6666ff,transparent:true,opacity:0.9});
+        //towChart.addBar(2,10,2,cubeMaterial,{x:2,y:2});
+        for(var i = 0 ; i < 3; i++){
+            for(var j = 0; j < 3; j++){
+                var randomHeight = (Math.random()*10)+8;
+                towChart.addBar(2,randomHeight,2,cubeMaterial,{x:12*i+2,y:12*j+2});
+            }
+        }
+
+
+        //boxInaBox()
+        var titleText = towChart.initTextCanvas({
+            text:'图表',
+        })
+        var titleSprite = towChart.initTextSprite(titleText)
+        titleSprite.position.set(15,20,15)
+        titleSprite.scale.set(20,20,1)
+        scene.add(titleSprite)
+
+        var sprite2 = towChart.initTextSprite(towChart.initTextCanvas({
+            text:'你好这是测试',
+            font:'50px 微软雅黑',
+            color:'red'
+        }))
+        sprite2.scale.set(200,200,1)
+        sprite2.position.set(0,0,14)
+        sceneOrtho.add(sprite2)
+
+        var textureLoader = new THREE.TextureLoader()
+        var mapIcon = textureLoader.load('textures/myTextures/headIcon.png')
+        var materialIcon = new THREE.SpriteMaterial({map:mapIcon})
+        icon = new THREE.Sprite(materialIcon);
+        icon.position.set(window.innerWidth-10,-10,1)
+        icon.center.set(1,0)
+        icon.scale.set(100,100,1)
+        sceneOrtho.add(icon)
+
+        initNumber()
+    }
+
+    function initNumber(){
+        for(var i = 0 ; i < 3;i ++){
+            var currentNum = (i+1)*100;
+            var canvasNum = towChart.initTextCanvas({
+                text:''+currentNum,
+            })
+            var sprite = towChart.initTextSprite(canvasNum)
+            sprite.position.y = 30
+            sprite.position.x = 0
+            sprite.position.z = (i+1)*5
+            scene.add(sprite)
+        }
+    }
+    function initStats(){
+        stats = new Stats()
+        document.body.appendChild(stats.dom)
+    }
+
+    function initControls(){
+        controls = new THREE.OrbitControls(camera,renderer.domElement)
+        controls.enableDamping = true;
+
+        controls.enableZoom = true;
+
+        controls.target = new THREE.Vector3(10,0,10);
+
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = 0.5
+        controls.minDistance = 1
+        controls.maxDistance = 2000
+        controls.enablePan = true
+
+    }
+
+    function render(){
+        var halfWidth = window.innerWidth/2;
+        var halfHeight = window.innerHeight/2;
+
+
+
+    }
+
+    function onWindowResize(){
+
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        camera.aspect = width / height;
+
+        camera.updateProjectionMatrix();
+        cameraOrtho.left = - width / 2;
+        cameraOrtho.right = width / 2;
+        cameraOrtho.top = height / 2;
+        cameraOrtho.bottom = - height / 2;
+        cameraOrtho.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        /*camera.aspect = window.innerWidth/window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth,window.innerHeight)*/
+
+    }
+    function iconAnimate(){
+        var time = (Date.now() / 100)%100000
+        var changex = Math.sin(time) * 0.5
+        icon.position.y += changex
+    }
+    function animate(){
+        render()
+
+        stats.update()
+
+        controls.update()
+
+        renderer.clear()
+        renderer.render(scene,camera)
+        renderer.setClearColor(0xffffff,0)
+
+        renderer.clearDepth()
+        iconAnimate()
+        renderer.render(sceneOrtho,cameraOrtho)
+
+        requestAnimationFrame(animate)
+
+    }
+
+    function draw(){
+        if(!Detector.webgl)Detector.addGetWebGlMessage()
+        initGui()
+        initRender()
+        initScene()
+        initCamera()
+        initLight()
+        initModel()
+        initControls()
+        initStats()
+
+        animate()
+        window.onresize = onWindowResize;
+
+    }
+
+    setTimeout(function(){
+
+    },6000)
+
+</script>
+</body>
+</html>
